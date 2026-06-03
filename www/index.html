@@ -397,23 +397,26 @@
         });
     }
 
-    function downloadPDF() {
+    async function downloadPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
         const tableColumn = ["Date", "Prev", "Current", "Units", "Amount (Rs)"];
+        let fileName = "Electricity_Bill.pdf";
 
         if (currentFlatId !== 'All') {
             let filtered = globalRecords.filter(r => r.flatId === currentFlatId);
             const tableRows = filtered.map(r => [r.date, r.previous, r.current, r.units, r.amount]);
             
             const titleName = flatNames[currentFlatId];
+            fileName = `Electricity_Bill_${titleName.replace(/ /g, '_')}.pdf`;
+            
             doc.setFontSize(16);
             doc.text(`Electricity Bill - ${titleName}`, 14, 20);
             doc.autoTable({ head: [tableColumn], body: tableRows, startY: 25 });
-            doc.save(`Electricity_Bill_${titleName.replace(/ /g, '_')}.pdf`);
             
         } else {
+            fileName = "Electricity_Bill_All_Flats.pdf";
             doc.setFontSize(18);
             doc.text("Electricity Bill History - All Flats", 14, 20);
             
@@ -443,7 +446,29 @@
                     }
                 }
             });
-            doc.save("Electricity_Bill_All_Flats.pdf");
+        }
+
+        // --- NEW ANDROID SHARE LOGIC ---
+        try {
+            // Convert PDF to a raw data blob
+            const pdfBlob = doc.output('blob');
+            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            // Check if the phone supports native sharing
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'Electricity Bill',
+                    text: 'Here is the latest electricity billing record.'
+                });
+            } else {
+                // Fallback for computer browsers
+                doc.save(fileName);
+            }
+        } catch (error) {
+            console.log("Sharing failed or was cancelled.", error);
+            // Backup fallback just in case
+            doc.save(fileName);
         }
     }
 
