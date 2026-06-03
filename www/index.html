@@ -433,42 +433,46 @@
                     
                     const tableRows = flatRecords.map(r => [r.date, r.previous, r.current, r.units, r.amount]);
                     
-                    doc.autoTable({ 
-                        head: [tableColumn], 
-                        body: tableRows, 
-                        startY: currentY + 5,
-                        margin: { bottom: 20 }
-                    });
+                    doc.autoTable({ head: [tableColumn], body: tableRows, startY: currentY + 5, margin: { bottom: 20 }});
                     currentY = doc.lastAutoTable.finalY + 15; 
-                    if (currentY > 270) {
-                        doc.addPage();
-                        currentY = 20;
-                    }
+                    if (currentY > 270) { doc.addPage(); currentY = 20; }
                 }
             });
         }
 
-        // --- NEW ANDROID SHARE LOGIC ---
         try {
-            // Convert PDF to a raw data blob
-            const pdfBlob = doc.output('blob');
-            const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+            // Detect if we are running inside the mobile APK or a PC Browser
+            const isMobile = /Android|webOS|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // 1. Convert PDF to raw data
+                const base64Data = doc.output('datauristring').split(',')[1];
+                
+                // 2. Load the native Android tools we added in Step 1
+                const { Filesystem, Directory } = await import('https://esm.sh/@capacitor/filesystem');
+                const { Share } = await import('https://esm.sh/@capacitor/share');
 
-            // Check if the phone supports native sharing
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'Electricity Bill',
-                    text: 'Here is the latest electricity billing record.'
+                // 3. Save directly to Android's internal file system
+                const savedFile = await Filesystem.writeFile({
+                    path: fileName,
+                    data: base64Data,
+                    directory: Directory.Cache
+                });
+
+                // 4. Trigger the Android Native Share Menu!
+                await Share.share({
+                    title: fileName,
+                    text: 'Here is the electricity billing record.',
+                    url: savedFile.uri,
+                    dialogTitle: 'Save or Share PDF'
                 });
             } else {
-                // Fallback for computer browsers
+                // If on a PC browser, use normal download
                 doc.save(fileName);
             }
         } catch (error) {
-            console.log("Sharing failed or was cancelled.", error);
-            // Backup fallback just in case
-            doc.save(fileName);
+            console.error("Native share failed:", error);
+            alert("Could not load native sharing. Make sure your internet is on.");
         }
     }
 
