@@ -18,7 +18,7 @@ jobs:
     - name: Setup Java for Android
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'temurin'
 
     - name: Install App Builder (Capacitor)
