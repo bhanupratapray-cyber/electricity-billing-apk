@@ -13,12 +13,12 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '22'
 
     - name: Setup Java for Android
       uses: actions/setup-java@v4
       with:
-        java-version: '22'
+        java-version: '17'
         distribution: 'temurin'
 
     - name: Install App Builder (Capacitor)
