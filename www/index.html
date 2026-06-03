@@ -1,1 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electricity Billing System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <style>
+        /* Professional, Clean Corporate Theme */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            padding: 15px; 
+            background-color: #f0f2f5; 
+            margin: 0; 
+            user-select: none; 
+            color: #1c1e21;
+        }
 
+        .container { 
+            background: #ffffff; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            max-width: 500px; 
+            margin: auto; 
+        }
+
+        .header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 10px; 
+            border-bottom: 2px solid #f0f2f5; 
+            padding-bottom: 15px; 
+        }
+        
+        #flatTitle { 
+            margin: 0; 
+            font-size: 22px; 
+            font-weight: 700;
+            color: #1c1e21;
+            cursor: pointer; 
+            padding: 5px; 
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        #flatTitle:active { background: #e4e6eb; }
+
+        .tabs { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 25px; 
+            overflow-x: auto; 
+            padding-bottom: 5px; 
+        }
+        
+        button { 
+            font-family: inherit;
+            padding: 10px 16px; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer; 
+            white-space: nowrap; 
+            transition: all 0.2s ease;
+        }
+
+        /* Tab Buttons */
+        .tab-btn { background: #e4e6eb; color: #4b4f56; }
+        .tab-btn:hover { background: #d8dadf; }
+        .tab-btn.active { background: #0064e1; color: #ffffff; }
+
+        /* All History Tab */
+        #btn-All { background: #e4e6eb; }
+        #btn-All.active { background: #28a745; color: #ffffff; }
+
+        /* Action Buttons */
+        .action-btn { 
+            background: #0064e1; 
+            color: white; 
+            width: 100%; 
+            margin-top: 15px; 
+            padding: 14px; 
+            font-size: 16px; 
+        }
+        .action-btn:hover { background: #0052cc; }
+
+        .pdf-btn { 
+            background: #ffffff; 
+            color: #1c1e21; 
+            border: 1px solid #ccd0d5; 
+            font-size: 13px;
+        }
+        .pdf-btn:hover { background: #f0f2f5; }
+
+        /* Form Inputs */
+        label { 
+            font-size: 14px; 
+            font-weight: 600;
+            color: #4b4f56; 
+            display: block; 
+            margin-top: 15px; 
+            margin-bottom: 6px;
+        }
+
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            background: #ffffff; 
+            border: 1px solid #ccd0d5; 
+            border-radius: 8px; 
+            color: #1c1e21; 
+            font-family: inherit;
+            font-size: 16px;
+            box-sizing: border-box; 
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #0064e1;
+            box-shadow: 0 0 0 3px rgba(0, 100, 225, 0.2);
+        }
+
+        /* History Cards */
+        .record-card { 
+            background: #ffffff; 
+            padding: 18px; 
+            margin-bottom: 15px; 
+            border: 1px solid #e4e6eb;
+            border-left: 5px solid #0064e1; 
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+            font-size: 15px;
+        }
+
+        .card-date {
+            font-weight: 700;
+            color: #1c1e21;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .card-details { color: #4b4f56; line-height: 1.6; }
+        
+        .card-total {
+            color: #28a745; 
+            font-size: 20px; 
+            font-weight: 700;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .hidden { display: none; }
+        .owner-notice { font-size: 12.5px; font-weight: 500; color: #d93025; margin-top: 5px; display: block; }
+        
+        /* Subtitle */
+        .subtitle { font-size: 12px; color: #65676b; margin-top: -5px; margin-bottom: 20px; }
+        
+        .section-title { margin-top: 35px; font-size: 18px; color: #1c1e21; border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h2 id="flatTitle">Flat A</h2>
+        <button class="pdf-btn" onclick="downloadPDF()">Download PDF</button>
+    </div>
+    <p class="subtitle"></p>
+
+    <div class="tabs">
+        <button id="btn-FlatA" class="tab-btn active" onclick="switchTab('Flat A')">Flat A</button>
+        <button id="btn-FlatB" class="tab-btn" onclick="switchTab('Flat B')">Flat B</button>
+        <button id="btn-FlatC" class="tab-btn" onclick="switchTab('Flat C')">Owner</button>
+        <button id="btn-All" class="tab-btn" onclick="switchTab('All')">All History</button>
+    </div>
+
+    <div id="inputSection">
+        <label>Select Date:</label>
+        <input type="date" id="billDate">
+        
+        <label>Previous Reading:</label>
+        <input type="number" id="prevReading">
+        
+        <label>Current Reading:</label>
+        <input type="number" id="currReading">
+
+        <div id="ownerBillSection" class="hidden">
+            <label style="color: #d93025;">Total Main Bill Amount (₹):</label>
+            <input type="number" id="mainBillAmount" style="border-color: #d93025;" placeholder="Enter total building bill">
+            <span class="owner-notice">Note: Log Flat A & B readings first to calculate the correct remainder.</span>
+        </div>
+        
+        <button id="calcBtn" class="action-btn" onclick="calculateAndSave()">Calculate & Save (₹9/unit)</button>
+    </div>
+
+    <h3 class="section-title">Billing History</h3>
+    <div id="historyList"></div>
+</div>
+
+<script>
+    let currentFlatId = 'Flat A';
+    const ratePerUnit = 9;
+    let globalRecords = []; // Stores the data pulled from Google Sheets
+
+    // PASTE YOUR GOOGLE APPS SCRIPT URL HERE
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-qmLcp4b22Ql_wcHbcB3yyODPBmQrWdcRwpGLk3cWMOJZDArGPLpf60i1nP6JdpCq/exec';
+
+    let flatNames = JSON.parse(localStorage.getItem('flatNames')) || {
+        'Flat A': 'Flat A',
+        'Flat B': 'Flat B',
+        'Flat C': 'My Flat (Owner)' 
+    };
+
+    function getTodayDateForInput() {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    }
+
+    async function init() {
+        document.getElementById('billDate').value = getTodayDateForInput();
+        setupLongPress();
+        updateUI();
+        
+        // Load data from Google Sheets immediately
+        document.getElementById('calcBtn').innerText = "Loading Database...";
+        document.getElementById('calcBtn').disabled = true;
+        
+        try {
+            const response = await fetch(SCRIPT_URL);
+            globalRecords = await response.json();
+            renderHistory();
+            autoFillPreviousReading();
+        } catch (error) {
+            alert("Error connecting to database. Please check your internet connection.");
+        }
+        
+        resetButtonText();
+    }
+
+    function updateUI() {
+        document.getElementById('btn-FlatA').innerText = flatNames['Flat A'];
+        document.getElementById('btn-FlatB').innerText = flatNames['Flat B'];
+        document.getElementById('btn-FlatC').innerText = flatNames['Flat C'];
+        
+        if (currentFlatId === 'All') {
+            document.getElementById('flatTitle').innerText = 'All Records';
+        } else {
+            document.getElementById('flatTitle').innerText = flatNames[currentFlatId];
+        }
+        renderHistory();
+    }
+
+    function resetButtonText() {
+        document.getElementById('calcBtn').disabled = false;
+        if(currentFlatId === 'Flat C') {
+            document.getElementById('calcBtn').innerText = "Calculate Remainder & Save";
+        } else {
+            document.getElementById('calcBtn').innerText = "Calculate & Save (₹9/unit)";
+        }
+    }
+
+    function switchTab(flatId) {
+        currentFlatId = flatId;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById('btn-' + flatId.replace(' ', '')).classList.add('active');
+        
+        if(flatId === 'All') {
+            document.getElementById('inputSection').classList.add('hidden');
+        } else {
+            document.getElementById('inputSection').classList.remove('hidden');
+            
+            if(flatId === 'Flat C') {
+                document.getElementById('ownerBillSection').classList.remove('hidden');
+            } else {
+                document.getElementById('ownerBillSection').classList.add('hidden');
+            }
+            autoFillPreviousReading();
+        }
+        updateUI();
+        resetButtonText();
+    }
+
+    function autoFillPreviousReading() {
+        let flatRecords = globalRecords.filter(r => r.flatId === currentFlatId);
+        
+        if (flatRecords.length > 0) {
+            document.getElementById('prevReading').value = flatRecords[flatRecords.length - 1].current;
+        } else {
+            document.getElementById('prevReading').value = '';
+        }
+        document.getElementById('currReading').value = '';
+        document.getElementById('mainBillAmount').value = ''; 
+    }
+
+    function getLatestAmountFor(targetFlatId) {
+        let flatRecords = globalRecords.filter(r => r.flatId === targetFlatId);
+        if (flatRecords.length > 0) {
+            return parseFloat(flatRecords[flatRecords.length - 1].amount);
+        }
+        return 0; 
+    }
+
+    async function calculateAndSave() {
+        const rawDate = document.getElementById('billDate').value;
+        const prev = parseFloat(document.getElementById('prevReading').value);
+        const curr = parseFloat(document.getElementById('currReading').value);
+
+        if (!rawDate || isNaN(prev) || isNaN(curr)) {
+            alert("Please fill in all reading fields."); return;
+        }
+        if (curr < prev) {
+            alert("Current reading cannot be lower than the previous reading."); return;
+        }
+
+        const dateParts = rawDate.split('-');
+        const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+        const units = curr - prev;
+        let totalAmount = 0;
+
+        if (currentFlatId === 'Flat C') {
+            const mainBill = parseFloat(document.getElementById('mainBillAmount').value);
+            if (isNaN(mainBill)) {
+                alert("Please enter the total main bill amount for the building."); return;
+            }
+
+            const latestFlatA = getLatestAmountFor('Flat A');
+            const latestFlatB = getLatestAmountFor('Flat B');
+            
+            totalAmount = mainBill - (latestFlatA + latestFlatB);
+            if (totalAmount < 0) totalAmount = 0; 
+        } else {
+            totalAmount = units * ratePerUnit;
+        }
+
+        const newRecord = {
+            id: Date.now(),
+            flatId: currentFlatId,
+            date: formattedDate,
+            previous: prev,
+            current: curr,
+            units: units,
+            amount: totalAmount
+        };
+
+        // Update UI immediately (Optimistic Update)
+        globalRecords.push(newRecord);
+        autoFillPreviousReading();
+        renderHistory();
+
+        // Push to Google Sheets in background
+        const btn = document.getElementById('calcBtn');
+        btn.innerText = "Syncing to Cloud...";
+        btn.disabled = true;
+
+        try {
+            await fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify(newRecord)
+            });
+        } catch (error) {
+            alert("Warning: Could not sync to Google Sheets. Record is only saved temporarily.");
+        }
+
+        resetButtonText();
+    }
+
+    function renderHistory() {
+        const listDiv = document.getElementById('historyList');
+        listDiv.innerHTML = '';
+
+        let recordsToDisplay = [...globalRecords];
+        if (currentFlatId !== 'All') {
+            recordsToDisplay = recordsToDisplay.filter(r => r.flatId === currentFlatId);
+        }
+        recordsToDisplay.reverse();
+
+        recordsToDisplay.forEach(record => {
+            const displayName = flatNames[record.flatId];
+            listDiv.innerHTML += `
+                <div class="record-card">
+                    <span class="card-date">${currentFlatId === 'All' ? displayName + ' | ' : ''}${record.date}</span>
+                    <span class="card-details">Previous: ${record.previous} &nbsp;|&nbsp; Current: ${record.current}<br>
+                    Units Consumed: ${record.units}</span>
+                    <span class="card-total">₹${parseFloat(record.amount).toFixed(2)}</span>
+                </div>
+            `;
+        });
+    }
+
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        const tableColumn = ["Date", "Prev", "Current", "Units", "Amount (Rs)"];
+
+        if (currentFlatId !== 'All') {
+            let filtered = globalRecords.filter(r => r.flatId === currentFlatId);
+            const tableRows = filtered.map(r => [r.date, r.previous, r.current, r.units, r.amount]);
+            
+            const titleName = flatNames[currentFlatId];
+            doc.setFontSize(16);
+            doc.text(`Electricity Bill - ${titleName}`, 14, 20);
+            doc.autoTable({ head: [tableColumn], body: tableRows, startY: 25 });
+            doc.save(`Electricity_Bill_${titleName.replace(/ /g, '_')}.pdf`);
+            
+        } else {
+            doc.setFontSize(18);
+            doc.text("Electricity Bill History - All Flats", 14, 20);
+            
+            let currentY = 30; 
+            
+            Object.keys(flatNames).forEach((flatKey) => {
+                const flatRecords = globalRecords.filter(r => r.flatId === flatKey);
+                if (flatRecords.length > 0) {
+                    const flatDisplayName = flatNames[flatKey];
+                    
+                    doc.setFontSize(14);
+                    doc.setTextColor(0, 100, 225); 
+                    doc.text(flatDisplayName, 14, currentY);
+                    
+                    const tableRows = flatRecords.map(r => [r.date, r.previous, r.current, r.units, r.amount]);
+                    
+                    doc.autoTable({ 
+                        head: [tableColumn], 
+                        body: tableRows, 
+                        startY: currentY + 5,
+                        margin: { bottom: 20 }
+                    });
+                    currentY = doc.lastAutoTable.finalY + 15; 
+                    if (currentY > 270) {
+                        doc.addPage();
+                        currentY = 20;
+                    }
+                }
+            });
+            doc.save("Electricity_Bill_All_Flats.pdf");
+        }
+    }
+
+    function setupLongPress() {
+        let pressTimer;
+        const titleEl = document.getElementById('flatTitle');
+        const startPress = (e) => {
+            if (currentFlatId === 'All') return; 
+            pressTimer = window.setTimeout(() => { renameFlat(); }, 800);
+        };
+        const cancelPress = () => { clearTimeout(pressTimer); };
+        titleEl.addEventListener('touchstart', startPress, {passive: true});
+        titleEl.addEventListener('touchend', cancelPress);
+        titleEl.addEventListener('mousedown', startPress);
+        titleEl.addEventListener('mouseup', cancelPress);
+        titleEl.addEventListener('mouseleave', cancelPress);
+    }
+
+    function renameFlat() {
+        const currentName = flatNames[currentFlatId];
+        const newName = prompt(`Enter a new name for ${currentName}:`, currentName);
+        if (newName && newName.trim() !== '') {
+            flatNames[currentFlatId] = newName.trim();
+            localStorage.setItem('flatNames', JSON.stringify(flatNames));
+            updateUI();
+        }
+    }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>
